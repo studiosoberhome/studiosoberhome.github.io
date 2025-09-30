@@ -116,5 +116,51 @@
 				<p>Güncellemeler için bizi takip edin</p>
 			</div>
 		</div>
+
+		<!-- Admin Visitor Counter (Hidden from regular visitors) -->
+		<div
+			id="adminCounter"
+			style="
+				position: fixed;
+				bottom: 10px;
+				right: 10px;
+				background: rgba(0, 0, 0, 0.7);
+				color: white;
+				padding: 5px 10px;
+				border-radius: 5px;
+				font-size: 12px;
+				display: none;
+			"
+		>
+			Visitors: <span id="visitorCount">Loading...</span>
+		</div>
+
+		<script>
+			// Simple visitor counter using localStorage
+			function updateVisitorCount() {
+				let count = localStorage.getItem("visitorCount");
+				if (count === null) {
+					count = 1;
+				} else {
+					count = parseInt(count) + 1;
+				}
+				localStorage.setItem("visitorCount", count);
+				document.getElementById("visitorCount").textContent = count;
+			}
+
+			// Admin check - only show counter if admin key is present in URL
+			function checkAdmin() {
+				const urlParams = new URLSearchParams(window.location.search);
+				const adminKey = urlParams.get("admin");
+
+				if (adminKey === "admin123") {
+					document.getElementById("adminCounter").style.display = "block";
+					updateVisitorCount();
+				}
+			}
+
+			// Check admin status when page loads
+			checkAdmin();
+		</script>
 	</body>
 </html>
