@@ -136,7 +136,7 @@
 		</div>
 
 		<script>
-			// Global visitor counter for ALL users worldwide
+			// Global visitor counter for GitHub Pages
 			async function updateVisitorCount() {
 				try {
 					// Check if this is a new visit (not a page refresh)
@@ -146,28 +146,33 @@
 						// Mark as visited for this session
 						sessionStorage.setItem('studiosoberhome_visited', 'true');
 						
-						// Increment global counter
-						const response = await fetch('api/counter.php', {
-							method: 'POST',
-							headers: {
-								'Content-Type': 'application/json'
-							}
+						// Use a reliable free counter service that works with GitHub Pages
+						const response = await fetch('https://api.countapi.xyz/hit/studiosoberhome-global/visits', {
+							method: 'GET',
+							mode: 'cors'
 						});
 						
 						if (response.ok) {
 							const data = await response.json();
-							document.getElementById("visitorCount").textContent = data.count;
+							document.getElementById("visitorCount").textContent = data.value;
 						} else {
-							document.getElementById("visitorCount").textContent = "Error updating count";
+							// Fallback to a different service
+							const fallbackResponse = await fetch('https://api.countapi.xyz/hit/studiosoberhome2024/visits');
+							if (fallbackResponse.ok) {
+								const fallbackData = await fallbackResponse.json();
+								document.getElementById("visitorCount").textContent = fallbackData.value;
+							} else {
+								document.getElementById("visitorCount").textContent = "Counter unavailable";
+							}
 						}
 					} else {
 						// Just get current count without incrementing
-						const response = await fetch('api/counter.php');
+						const response = await fetch('https://api.countapi.xyz/get/studiosoberhome-global/visits');
 						if (response.ok) {
 							const data = await response.json();
-							document.getElementById("visitorCount").textContent = data.count;
+							document.getElementById("visitorCount").textContent = data.value;
 						} else {
-							document.getElementById("visitorCount").textContent = "Error loading count";
+							document.getElementById("visitorCount").textContent = "Loading...";
 						}
 					}
 				} catch (error) {
