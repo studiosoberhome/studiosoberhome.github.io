@@ -135,10 +135,9 @@
 			Visitors: <span id="visitorCount">Loading...</span>
 		</div>
 
-		<script src="counter.js"></script>
 		<script>
-			// Simple and reliable visitor counter
-			function updateVisitorCount() {
+			// Global visitor counter for ALL users worldwide
+			async function updateVisitorCount() {
 				try {
 					// Check if this is a new visit (not a page refresh)
 					const isNewVisit = !sessionStorage.getItem('studiosoberhome_visited');
@@ -146,16 +145,33 @@
 					if (isNewVisit) {
 						// Mark as visited for this session
 						sessionStorage.setItem('studiosoberhome_visited', 'true');
-						// Increment the counter
-						const count = incrementCount();
-						document.getElementById("visitorCount").textContent = count;
+						
+						// Increment global counter
+						const response = await fetch('api/counter.php', {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json'
+							}
+						});
+						
+						if (response.ok) {
+							const data = await response.json();
+							document.getElementById("visitorCount").textContent = data.count;
+						} else {
+							document.getElementById("visitorCount").textContent = "Error updating count";
+						}
 					} else {
-						// Just show current count
-						const count = getCount();
-						document.getElementById("visitorCount").textContent = count;
+						// Just get current count without incrementing
+						const response = await fetch('api/counter.php');
+						if (response.ok) {
+							const data = await response.json();
+							document.getElementById("visitorCount").textContent = data.count;
+						} else {
+							document.getElementById("visitorCount").textContent = "Error loading count";
+						}
 					}
 				} catch (error) {
-					document.getElementById("visitorCount").textContent = "Error loading count";
+					document.getElementById("visitorCount").textContent = "Counter unavailable";
 				}
 			}
 
