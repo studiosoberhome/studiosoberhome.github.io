@@ -136,8 +136,8 @@
 		</div>
 
 		<script>
-			// Global visitor counter using multiple free services
-			async function updateVisitorCount() {
+			// Simple and reliable visitor counter
+			function updateVisitorCount() {
 				try {
 					// Check if this is a new visit (not a page refresh)
 					const isNewVisit = !sessionStorage.getItem('studiosoberhome_visited');
@@ -153,115 +153,29 @@
 							localStorage.setItem('studiosoberhome_visitor_id', visitorId);
 						}
 						
-						// Try multiple free counter services
-						const services = [
-							'https://api.countapi.xyz/hit/studiosoberhome-global/visits',
-							'https://api.countapi.xyz/hit/studiosoberhome2024/visits',
-							'https://api.countapi.xyz/hit/studiosoberhome-counter/visits',
-							'https://api.countapi.xyz/hit/studiosoberhome-world/visits',
-							'https://api.countapi.xyz/hit/studiosoberhome-total/visits'
-						];
-						
-						let globalCount = null;
-						let successCount = 0;
-						
-						// Try ALL services in parallel
-						const promises = services.map(async (service, index) => {
-							try {
-								const response = await fetch(service, {
-									method: 'GET',
-									mode: 'cors',
-									signal: AbortSignal.timeout(5000)
-								});
-								
-								if (response.ok) {
-									const data = await response.json();
-									// Handle different response formats
-									const count = data.value || data.count || data.visits || data.total || 1;
-									globalCount = count;
-									successCount++;
-									return { success: true, count: count, service: index };
-								}
-							} catch (e) {
-								// Service failed, continue
-							}
-							return { success: false, service: index };
-						});
-						
-						// Wait for all services to complete
-						const results = await Promise.allSettled(promises);
-						
-						// Find the first successful result
-						for (const result of results) {
-							if (result.status === 'fulfilled' && result.value.success) {
-								globalCount = result.value.count;
-								break;
-							}
-						}
-						
-						if (globalCount !== null) {
-							// Global counter worked!
-							document.getElementById("visitorCount").textContent = globalCount + " (GLOBAL)";
-							
-							// Also store locally as backup
-							localStorage.setItem('studiosoberhome_global_count', globalCount.toString());
-						} else {
-							// All services failed - use local counter
-							let count = parseInt(localStorage.getItem('studiosoberhome_global_count') || '0');
-							count += 1;
-							localStorage.setItem('studiosoberhome_global_count', count.toString());
-							document.getElementById("visitorCount").textContent = count + " (LOCAL)";
-						}
+						// Simple local counter that works reliably
+						let count = parseInt(localStorage.getItem('studiosoberhome_global_count') || '0');
+						count += 1;
+						localStorage.setItem('studiosoberhome_global_count', count.toString());
 						
 						// Store visitor data
 						const visitorData = {
 							timestamp: new Date().toISOString(),
 							userAgent: navigator.userAgent,
 							referrer: document.referrer || 'direct',
-							visitorId: visitorId,
-							successfulServices: successCount,
-							globalCount: globalCount
+							visitorId: visitorId
 						};
 						
 						const visitors = JSON.parse(localStorage.getItem('studiosoberhome_visitors') || '[]');
 						visitors.push(visitorData);
 						localStorage.setItem('studiosoberhome_visitors', JSON.stringify(visitors));
 						
+						document.getElementById("visitorCount").textContent = count + " (LOCAL)";
+						
 					} else {
 						// Show current count without incrementing
-						try {
-							// Try to get global count from working services
-							const getServices = [
-								'https://api.countapi.xyz/get/studiosoberhome-global/visits',
-								'https://api.countapi.xyz/get/studiosoberhome2024/visits',
-								'https://api.countapi.xyz/get/studiosoberhome-counter/visits'
-							];
-							
-							let currentCount = null;
-							for (const service of getServices) {
-								try {
-									const response = await fetch(service);
-									if (response.ok) {
-										const data = await response.json();
-										currentCount = data.value || data.count || data.visits || data.total;
-										break;
-									}
-								} catch (e) {
-									continue;
-								}
-							}
-							
-							if (currentCount !== null) {
-								document.getElementById("visitorCount").textContent = currentCount + " (GLOBAL)";
-							} else {
-								// Fallback to local count
-								let count = parseInt(localStorage.getItem('studiosoberhome_global_count') || '0');
-								document.getElementById("visitorCount").textContent = count + " (LOCAL)";
-							}
-						} catch (error) {
-							let count = parseInt(localStorage.getItem('studiosoberhome_global_count') || '0');
-							document.getElementById("visitorCount").textContent = count + " (LOCAL)";
-						}
+						let count = parseInt(localStorage.getItem('studiosoberhome_global_count') || '0');
+						document.getElementById("visitorCount").textContent = count + " (LOCAL)";
 					}
 				} catch (error) {
 					document.getElementById("visitorCount").textContent = "Counter unavailable";
