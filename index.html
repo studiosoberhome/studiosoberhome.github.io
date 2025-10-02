@@ -4,6 +4,16 @@
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Yakında - Studio Sober Home</title>
+		
+		<!-- Google tag (gtag.js) -->
+		<script async src="https://www.googletagmanager.com/gtag/js?id=G-0DLSPKKWC3"></script>
+		<script>
+		  window.dataLayer = window.dataLayer || [];
+		  function gtag(){dataLayer.push(arguments);}
+		  gtag('js', new Date());
+
+		  gtag('config', 'G-0DLSPKKWC3');
+		</script>
 		<style>
 			* {
 				margin: 0;
@@ -136,7 +146,7 @@
 		</div>
 
 		<script>
-			// Website visitor counter for studiosoberhome.github.io
+			// TRUE GLOBAL visitor counter for studiosoberhome.github.io
 			async function updateVisitorCount() {
 				try {
 					// Check if this is a new visit (not a page refresh)
@@ -153,11 +163,63 @@
 							localStorage.setItem('studiosoberhome_visitor_id', visitorId);
 						}
 						
-						// Use a simple approach: create a global counter using localStorage
-						// This creates a counter that works across all users
-						let count = parseInt(localStorage.getItem('studiosoberhome_global_count') || '0');
-						count += 1;
-						localStorage.setItem('studiosoberhome_global_count', count.toString());
+						// Try multiple global counter services in parallel
+						const globalServices = [
+							'https://api.countapi.xyz/hit/studiosoberhome-website/visits',
+							'https://api.countapi.xyz/hit/studiosoberhome-global/visits',
+							'https://api.counter.dev/hit/studiosoberhome-website',
+							'https://api.visitorapi.com/api/1.0/visitor-count?key=studiosoberhome-website'
+						];
+						
+						let globalCount = null;
+						let successCount = 0;
+						
+						// Try ALL services in parallel
+						const promises = globalServices.map(async (service, index) => {
+							try {
+								const response = await fetch(service, {
+									method: 'GET',
+									mode: 'cors',
+									signal: AbortSignal.timeout(3000)
+								});
+								
+								if (response.ok) {
+									const data = await response.json();
+									const count = data.value || data.count || data.visits || data.total || 1;
+									globalCount = count;
+									successCount++;
+									return { success: true, count: count, service: index };
+								}
+							} catch (e) {
+								// Service failed, continue
+							}
+							return { success: false, service: index };
+						});
+						
+						// Wait for all services to complete
+						const results = await Promise.allSettled(promises);
+						
+						// Find the first successful result
+						for (const result of results) {
+							if (result.status === 'fulfilled' && result.value.success) {
+								globalCount = result.value.count;
+								break;
+							}
+						}
+						
+						if (globalCount !== null) {
+							// TRUE GLOBAL counter worked!
+							document.getElementById("visitorCount").textContent = globalCount + " (GLOBAL)";
+							
+							// Also store locally as backup
+							localStorage.setItem('studiosoberhome_global_count', globalCount.toString());
+						} else {
+							// All global services failed - use local counter
+							let count = parseInt(localStorage.getItem('studiosoberhome_global_count') || '0');
+							count += 1;
+							localStorage.setItem('studiosoberhome_global_count', count.toString());
+							document.getElementById("visitorCount").textContent = count + " (LOCAL)";
+						}
 						
 						// Store visitor data
 						const visitorData = {
@@ -165,19 +227,50 @@
 							userAgent: navigator.userAgent,
 							referrer: document.referrer || 'direct',
 							visitorId: visitorId,
-							website: 'studiosoberhome.github.io'
+							website: 'studiosoberhome.github.io',
+							globalCount: globalCount,
+							successfulServices: successCount
 						};
 						
 						const visitors = JSON.parse(localStorage.getItem('studiosoberhome_visitors') || '[]');
 						visitors.push(visitorData);
 						localStorage.setItem('studiosoberhome_visitors', JSON.stringify(visitors));
 						
-						document.getElementById("visitorCount").textContent = count + " (WEBSITE)";
-						
 					} else {
 						// Show current count without incrementing
-						let count = parseInt(localStorage.getItem('studiosoberhome_global_count') || '0');
-						document.getElementById("visitorCount").textContent = count + " (WEBSITE)";
+						try {
+							// Try to get global count from working services
+							const getServices = [
+								'https://api.countapi.xyz/get/studiosoberhome-website/visits',
+								'https://api.countapi.xyz/get/studiosoberhome-global/visits',
+								'https://api.counter.dev/get/studiosoberhome-website'
+							];
+							
+							let currentCount = null;
+							for (const service of getServices) {
+								try {
+									const response = await fetch(service);
+									if (response.ok) {
+										const data = await response.json();
+										currentCount = data.value || data.count || data.visits || data.total;
+										break;
+									}
+								} catch (e) {
+									continue;
+								}
+							}
+							
+							if (currentCount !== null) {
+								document.getElementById("visitorCount").textContent = currentCount + " (GLOBAL)";
+							} else {
+								// Fallback to local count
+								let count = parseInt(localStorage.getItem('studiosoberhome_global_count') || '0');
+								document.getElementById("visitorCount").textContent = count + " (LOCAL)";
+							}
+						} catch (error) {
+							let count = parseInt(localStorage.getItem('studiosoberhome_global_count') || '0');
+							document.getElementById("visitorCount").textContent = count + " (LOCAL)";
+						}
 					}
 				} catch (error) {
 					document.getElementById("visitorCount").textContent = "Counter unavailable";
