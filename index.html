@@ -135,9 +135,27 @@
 			Visitors: <span id="visitorCount">Loading...</span>
 		</div>
 
+		<!-- Firebase SDK -->
+		<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+		<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+		
 		<script>
-			// Simple visitor counter for testing
-			function updateVisitorCount() {
+			// Firebase configuration
+			const firebaseConfig = {
+				apiKey: "AIzaSyBXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+				authDomain: "studiosoberhome-counter.firebaseapp.com",
+				projectId: "studiosoberhome-counter",
+				storageBucket: "studiosoberhome-counter.appspot.com",
+				messagingSenderId: "123456789012",
+				appId: "1:123456789012:web:abcdef1234567890"
+			};
+			
+			// Initialize Firebase
+			firebase.initializeApp(firebaseConfig);
+			const db = firebase.firestore();
+			
+			// Global visitor counter for ALL users worldwide
+			async function updateVisitorCount() {
 				try {
 					// Check if this is a new visit (not a page refresh)
 					const isNewVisit = !sessionStorage.getItem('studiosoberhome_visited');
@@ -146,18 +164,42 @@
 						// Mark as visited for this session
 						sessionStorage.setItem('studiosoberhome_visited', 'true');
 						
-						// Simple counter for testing
-						let count = parseInt(localStorage.getItem('test_visitor_count') || '0');
-						count += 1;
-						localStorage.setItem('test_visitor_count', count.toString());
+						// Increment global counter in Firebase
+						const counterRef = db.collection('counters').doc('visitor_count');
 						
-						document.getElementById("visitorCount").textContent = count;
+						// Use Firebase transaction to safely increment
+						await db.runTransaction(async (transaction) => {
+							const doc = await transaction.get(counterRef);
+							let count = 1;
+							
+							if (doc.exists) {
+								count = doc.data().count + 1;
+							}
+							
+							transaction.set(counterRef, { count: count, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() });
+							return count;
+						});
+						
+						// Get and display the updated count
+						const doc = await counterRef.get();
+						if (doc.exists) {
+							document.getElementById("visitorCount").textContent = doc.data().count;
+						} else {
+							document.getElementById("visitorCount").textContent = "1";
+						}
 					} else {
-						// Show current count
-						let count = parseInt(localStorage.getItem('test_visitor_count') || '0');
-						document.getElementById("visitorCount").textContent = count;
+						// Just show current count without incrementing
+						const counterRef = db.collection('counters').doc('visitor_count');
+						const doc = await counterRef.get();
+						
+						if (doc.exists) {
+							document.getElementById("visitorCount").textContent = doc.data().count;
+						} else {
+							document.getElementById("visitorCount").textContent = "0";
+						}
 					}
 				} catch (error) {
+					console.error('Counter error:', error);
 					document.getElementById("visitorCount").textContent = "Counter unavailable";
 				}
 			}
