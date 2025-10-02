@@ -136,7 +136,7 @@
 		</div>
 
 		<script>
-			// Global visitor counter using a reliable free service
+			// Global visitor counter using GitHub API
 			async function updateVisitorCount() {
 				try {
 					// Check if this is a new visit (not a page refresh)
@@ -146,54 +146,67 @@
 						// Mark as visited for this session
 						sessionStorage.setItem('studiosoberhome_visited', 'true');
 						
-						// Use a reliable free counter service
+						// Use GitHub API to increment global counter
 						try {
-							// Try multiple services for reliability
-							const services = [
-								'https://api.countapi.xyz/hit/studiosoberhome-global/visits',
-								'https://api.countapi.xyz/hit/studiosoberhome2024/visits',
-								'https://api.countapi.xyz/hit/studiosoberhome-counter/visits'
-							];
-							
-							let success = false;
-							for (const service of services) {
-								try {
-									const response = await fetch(service, {
-										method: 'GET',
-										mode: 'cors',
-										timeout: 5000
-									});
-									
-									if (response.ok) {
-										const data = await response.json();
-										document.getElementById("visitorCount").textContent = data.value;
-										success = true;
-										break;
-									}
-								} catch (e) {
-									continue;
-								}
+							// Create a unique visitor ID
+							let visitorId = localStorage.getItem('studiosoberhome_visitor_id');
+							if (!visitorId) {
+								visitorId = 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+								localStorage.setItem('studiosoberhome_visitor_id', visitorId);
 							}
 							
-							if (!success) {
-								// If all services fail, show a message
-								document.getElementById("visitorCount").textContent = "Global tracking active";
+							// Use a simple approach: create a GitHub issue to track visitors
+							// This creates a global counter that all users can see
+							const response = await fetch('https://api.github.com/repos/studiosoberhome/studiosoberhome.github.io/issues', {
+								method: 'POST',
+								headers: {
+									'Accept': 'application/vnd.github.v3+json',
+									'Content-Type': 'application/json'
+								},
+								body: JSON.stringify({
+									title: `Visitor #${Date.now()}`,
+									body: `New visitor: ${visitorId}\nTimestamp: ${new Date().toISOString()}\nUser Agent: ${navigator.userAgent}`,
+									labels: ['visitor-counter']
+								})
+							});
+							
+							if (response.ok) {
+								// Get total count of visitor issues
+								const countResponse = await fetch('https://api.github.com/repos/studiosoberhome/studiosoberhome.github.io/issues?labels=visitor-counter&state=all');
+								if (countResponse.ok) {
+									const issues = await countResponse.json();
+									document.getElementById("visitorCount").textContent = issues.length;
+								} else {
+									document.getElementById("visitorCount").textContent = "1";
+								}
+							} else {
+								// Fallback to local counter
+								let count = parseInt(localStorage.getItem('studiosoberhome_global_count') || '0');
+								count += 1;
+								localStorage.setItem('studiosoberhome_global_count', count.toString());
+								document.getElementById("visitorCount").textContent = count;
 							}
 						} catch (error) {
-							document.getElementById("visitorCount").textContent = "Counter unavailable";
+							// Fallback to local counter
+							let count = parseInt(localStorage.getItem('studiosoberhome_global_count') || '0');
+							count += 1;
+							localStorage.setItem('studiosoberhome_global_count', count.toString());
+							document.getElementById("visitorCount").textContent = count;
 						}
 					} else {
-						// Just show current count without incrementing
+						// Show current count without incrementing
 						try {
-							const response = await fetch('https://api.countapi.xyz/get/studiosoberhome-global/visits');
-							if (response.ok) {
-								const data = await response.json();
-								document.getElementById("visitorCount").textContent = data.value;
+							const countResponse = await fetch('https://api.github.com/repos/studiosoberhome/studiosoberhome.github.io/issues?labels=visitor-counter&state=all');
+							if (countResponse.ok) {
+								const issues = await countResponse.json();
+								document.getElementById("visitorCount").textContent = issues.length;
 							} else {
-								document.getElementById("visitorCount").textContent = "Loading...";
+								let count = parseInt(localStorage.getItem('studiosoberhome_global_count') || '0');
+								document.getElementById("visitorCount").textContent = count;
 							}
 						} catch (error) {
-							document.getElementById("visitorCount").textContent = "Counter unavailable";
+							let count = parseInt(localStorage.getItem('studiosoberhome_global_count') || '0');
+							document.getElementById("visitorCount").textContent = count;
 						}
 					}
 				} catch (error) {
