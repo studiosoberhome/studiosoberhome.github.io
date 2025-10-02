@@ -136,8 +136,8 @@
 		</div>
 
 		<script>
-			// Global visitor counter using a reliable service
-			async function updateVisitorCount() {
+			// Simple visitor counter for testing
+			function updateVisitorCount() {
 				try {
 					// Check if this is a new visit (not a page refresh)
 					const isNewVisit = !sessionStorage.getItem('studiosoberhome_visited');
@@ -146,43 +146,16 @@
 						// Mark as visited for this session
 						sessionStorage.setItem('studiosoberhome_visited', 'true');
 						
-						// Use a simple, reliable counter service
-						try {
-							// Try to use a working counter service
-							const response = await fetch('https://api.countapi.xyz/hit/studiosoberhome-global-counter/visits');
-							if (response.ok) {
-								const data = await response.json();
-								document.getElementById("visitorCount").textContent = data.value;
-							} else {
-								throw new Error('Service not available');
-							}
-						} catch (error) {
-							// Fallback: use a different approach
-							// Create a unique visitor ID
-							let visitorId = localStorage.getItem('studiosoberhome_visitor_id');
-							if (!visitorId) {
-								visitorId = 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-								localStorage.setItem('studiosoberhome_visitor_id', visitorId);
-								
-								// For now, show a message that global tracking is active
-								document.getElementById("visitorCount").textContent = "Global tracking active";
-							} else {
-								document.getElementById("visitorCount").textContent = "Visit tracked";
-							}
-						}
+						// Simple counter for testing
+						let count = parseInt(localStorage.getItem('test_visitor_count') || '0');
+						count += 1;
+						localStorage.setItem('test_visitor_count', count.toString());
+						
+						document.getElementById("visitorCount").textContent = count;
 					} else {
 						// Show current count
-						try {
-							const response = await fetch('https://api.countapi.xyz/get/studiosoberhome-global-counter/visits');
-							if (response.ok) {
-								const data = await response.json();
-								document.getElementById("visitorCount").textContent = data.value;
-							} else {
-								document.getElementById("visitorCount").textContent = "Loading...";
-							}
-						} catch (error) {
-							document.getElementById("visitorCount").textContent = "Counter unavailable";
-						}
+						let count = parseInt(localStorage.getItem('test_visitor_count') || '0');
+						document.getElementById("visitorCount").textContent = count;
 					}
 				} catch (error) {
 					document.getElementById("visitorCount").textContent = "Counter unavailable";
