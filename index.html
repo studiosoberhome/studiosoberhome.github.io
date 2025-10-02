@@ -155,11 +155,11 @@
 						
 						// Try multiple free counter services
 						const services = [
-							'https://api.visitorapi.com/api/1.0/visitor-count?key=studiosoberhome',
-							'https://api.counter.dev/hit/studiosoberhome',
 							'https://api.countapi.xyz/hit/studiosoberhome-global/visits',
 							'https://api.countapi.xyz/hit/studiosoberhome2024/visits',
-							'https://api.countapi.xyz/hit/studiosoberhome-counter/visits'
+							'https://api.countapi.xyz/hit/studiosoberhome-counter/visits',
+							'https://api.countapi.xyz/hit/studiosoberhome-world/visits',
+							'https://api.countapi.xyz/hit/studiosoberhome-total/visits'
 						];
 						
 						let globalCount = null;
@@ -232,9 +232,9 @@
 						try {
 							// Try to get global count from working services
 							const getServices = [
-								'https://api.visitorapi.com/api/1.0/visitor-count?key=studiosoberhome',
-								'https://api.counter.dev/get/studiosoberhome',
-								'https://api.countapi.xyz/get/studiosoberhome-global/visits'
+								'https://api.countapi.xyz/get/studiosoberhome-global/visits',
+								'https://api.countapi.xyz/get/studiosoberhome2024/visits',
+								'https://api.countapi.xyz/get/studiosoberhome-counter/visits'
 							];
 							
 							let currentCount = null;
